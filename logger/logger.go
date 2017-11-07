@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"text/template"
 	"time"
-	"goCli/logger/colors"
+	"mdocker/logger/colors"
 	"strings"
 )
 
@@ -33,8 +33,8 @@ const (
 	levelDebug = iota
 	levelSuccess
 	levelHint
-	levelWarn
 	levelInfo
+	levelWarn
 	levelError
 	levelCritical
 	levelFatal

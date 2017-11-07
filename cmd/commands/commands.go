@@ -2,11 +2,13 @@ package commands
 
 import (
 	"flag"
+	//flag "github.com/spf13/pflag"
 	"io"
 	"os"
 	"strings"
 	"mdocker/logger/colors"
 	"mdocker/utils"
+	"fmt"
 )
 
 // Command is the unit of execution
@@ -40,7 +42,8 @@ type Command struct {
 }
 
 var AvailableCommands = []*Command{}
-var cmdUsage = `Use {{printf "bee help %s" .Name | bold}} for more information.{{endline}}`
+
+var cmdUsage = `Use {{printf "mdocker help %s" .Name | bold}} for more information.{{endline}}`
 
 // Name returns the command's name: the first word in the Usage line.
 func (c *Command) Name() string {
@@ -50,6 +53,15 @@ func (c *Command) Name() string {
 		name = name[:i]
 	}
 	return name
+}
+
+func (c *Command) SliceName() []string {
+	name := c.UsageLine
+	i := strings.Index(name, " ")
+	if i >= 0 {
+		name = name[:i]
+	}
+	return strings.Split(name, "/")
 }
 
 // SetOutput sets the destination for Usage and error messages.
@@ -90,4 +102,16 @@ func (c *Command) Options() map[string]string {
 		}
 	})
 	return options
+}
+
+
+var CommandsGroups = map[string][]*Command{}
+
+func CheckNil(name, value string) bool {
+	if value == "" {
+		message := fmt.Sprintf("Please spectify %s", "-"+name)
+		utils.Tmpl(utils.FailedTemplate, message)
+		return true
+	}
+	return false
 }

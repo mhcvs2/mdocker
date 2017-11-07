@@ -7,32 +7,17 @@ import (
 )
 
 var Conf = struct {
-	Version            int
-	GoInstall          bool      `json:"go_install" yaml:"go_install"` // Indicates whether execute "go install" before "go build".
-	DirStruct          dirStruct `json:"dir_structure" yaml:"dir_structure"`
-	CmdArgs            []string  `json:"cmd_args" yaml:"cmd_args"`
-	Envs               []string
-	Bale               bale
-	Database           database
-	EnableReload       bool              `json:"enable_reload" yaml:"enable_reload"`
-	EnableNotification bool              `json:"enable_notification" yaml:"enable_notification"`
-	Scripts            map[string]string `json:"scripts" yaml:"scripts"`
+	AppName            string
+	Version            string
+	Description        string
+	Ignore             []string
+	Wn                 int
 }{
-	GoInstall: true,
-	DirStruct: dirStruct{
-		Others: []string{},
-	},
-	CmdArgs: []string{},
-	Envs:    []string{},
-	Bale: bale{
-		Dirs:   []string{},
-		IngExt: []string{},
-	},
-	Database: database{
-		Driver: "mysql",
-	},
-	EnableNotification: true,
-	Scripts:            map[string]string{},
+	AppName: "mdocker",
+	Version: "0.1.0",
+	Description: "mdocker description",
+	Ignore:[]string{},
+	Wn:4,
 }
 
 // dirStruct describes the application's directory structure
@@ -64,15 +49,6 @@ func LoadConfig(file string) {
 	err := parseJSON(file, &Conf)
 	if err != nil {
 		beeLogger.Log.Errorf("Failed to parse JSON file: %s", err)
-	}
-
-	// Set variables
-	if len(Conf.DirStruct.Controllers) == 0 {
-		Conf.DirStruct.Controllers = "controllers"
-	}
-
-	if len(Conf.DirStruct.Models) == 0 {
-		Conf.DirStruct.Models = "models"
 	}
 }
 

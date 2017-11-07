@@ -2,65 +2,119 @@ package cmd
 
 import (
 	"mdocker/cmd/commands"
-	_ "mdocker/cmd/commands/ins"
 	"mdocker/utils"
-	_ "mdocker/cmd/commands/img"
-	_ "mdocker/cmd/commands/start"
-	_ "mdocker/cmd/commands/stop"
-	_ "mdocker/cmd/commands/rm"
 )
 
-var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
+import (
+	_ "mdocker/cmd/commands/v1/testGroup/testCmd"
+	_ "mdocker/cmd/commands/defaultGroup/start"
+	_ "mdocker/cmd/commands/defaultGroup/stop"
+	_ "mdocker/cmd/commands/defaultGroup/rm"
+	_ "mdocker/cmd/commands/defaultGroup/ins"
+	_ "mdocker/cmd/commands/defaultGroup/clear"
+)
+
+import (
+	_ "mdocker/cmd/commands/defaultGroup/version"
+	//_ "mdocker/cmd/commands/test"
+)
+
+var sampleGroupUsageTemplate = `{{description}}
 
 {{"USAGE" | headline}}
-    {{"mdocker command [arguments]" | bold}}
+    {{app |bold}} {{"[command] [subcommand] [arguments]" | bold}}
 
-{{"AVAILABLE COMMANDS" | headline}}
-{{range .}}{{if .Runnable}}
-    {{.Name | printf "%-11s" | bold}} {{.Short}}{{end}}{{end}}
+{{$length := len .}}{{if gt $length 1}}{{"AVAILABLE COMMAND GROUPS" | headline}}
+{{range $i,$group := .}} {{ if ne $group.Name "default" }} {{ if $group.Show }}
+  o {{$group.Name | printf "%-20s" | bold}} {{$group.Short}}
+{{end}}{{end}}{{end}}{{end}}
+{{"AVAILABLE COMMANDS" | headline}} {{range $i,$group := .}} {{ if eq $group.Name "default" }}
+{{range $i,$c := $group.Commands}}{{if $c.Runnable}}
+  o {{$c.Name | printf "%-20s" | bold}} {{$c.Short}}{{end}}{{end}}
+{{end}}{{end}}
+Use {{app |bold}} {{"help" | bold}} for more information about all commands.
 
-Use {{"mdocker help [command]" | bold}} for more information about a command.
+Use {{app |bold}} {{"[command] help" | bold}} for more information about a command.
 
-{{"ADDITIONAL HELP TOPICS" | headline}}
-{{range .}}{{if not .Runnable}}
-    {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
-
-Use {{"mdocker help [topic]" | bold}} for more information about that topic.
+Use {{app |bold}} {{"[command] [subcommand] help" | bold}} for more information about a subcommand.
 `
 
-var helpTemplate = `{{"USAGE" | headline}}
-  {{.UsageLine | printf "mdocker %s" | bold}}
+var groupsUsageTemplate = `{{description}}
+
+{{"USAGE" | headline}}
+    {{app |bold}} {{"[command] [subcommand] [arguments]" | bold}}
+
+{{$length := len .}}{{if gt $length 2}}{{"AVAILABLE COMMAND GROUPS" | headline}}
+{{range $i,$group := .}} {{ if ne $group.Name "default" }} {{ if $group.Show }}
+  o {{$group.Name | printf "%-31s" | bold}} {{$group.Short | blue}}
+{{range $i,$c := $group.Commands}}{{if $c.Runnable}}
+        o {{$c.Name | printf "%-25s" | bold}} {{$c.Short}}{{end}}{{end}}
+{{end}}{{end}}{{end}}{{end}}
+{{"AVAILABLE COMMANDS" | headline}} {{range $i,$group := .}} {{ if eq $group.Name "default" }}
+{{range $i,$c := $group.Commands}}{{if $c.Runnable}}
+  o {{$c.Name | printf "%-31s" | bold}} {{$c.Short}}{{end}}{{end}}
+{{end}}{{end}}
+Use {{app |bold}} {{"[command] help" | bold}} for more information about a command.
+
+Use {{app |bold}} {{"[command] [subcommand] help" | bold}} for more information about a subcommand.
+`
+
+var groupUsageTemplate = `{{"DESCRIPTION" | headline}}
+  {{tmpltostr .Long . | trim}}
+
+{{"USAGE" | headline}}
+    {{app |bold}} {{.Name | bold}} {{"[subcommand] [arguments]" | bold}}
+
+{{"AVAILABLE SUBCOMMANDS: " | headline}}
+{{range $i,$c := .Commands}}{{if $c.Runnable}}
+     o {{$c.Name | printf "%-25s" | bold}} {{$c.Short}}{{end}}{{end}}
+
+Use {{app |bold}} {{.Name | bold}} {{" [subcommand] help" | bold}} for more information about a subcommand.
+
+`
+
+var helpTemplate = `{{"DESCRIPTION" | headline}}
+  {{tmpltostr .Long . | trim}}
+
+{{"USAGE" | headline}}
+  {{app | bold}} {{.UsageLine | printf "%s" | bold}}
 {{if .Options}}{{endline}}{{"OPTIONS" | headline}}{{range $k,$v := .Options}}
   {{$k | printf "-%s" | bold}}
       {{$v}}
   {{end}}{{end}}
-{{"DESCRIPTION" | headline}}
-  {{tmpltostr .Long . | trim}}
 `
 
-var ErrorTemplate = `mdocker: %s.
-Use {{"mdocker help" | bold}} for more information.
+var ErrorTemplate = `{{app}}: %s.
+
+Use  {{app |bold}} {{"help" | bold}} for more information about {{app}}.
+
+Use  {{app |bold}} {{"[command] help" | bold}} for more information about a command.
+
+Use  {{app |bold}} {{"[command] [subcommand] help" | bold}} for more information about a subcommand.
 `
 
 func Usage() {
-	utils.Tmpl(usageTemplate, commands.AvailableCommands)
+	utils.Tmpl(groupsUsageTemplate, commandGroupsFilter())
 }
 
-func Help(args []string) {
-	if len(args) == 0 {
-		Usage()
-	}
-	if len(args) != 1 {
-		utils.PrintErrorAndExit("Too many arguments", ErrorTemplate)
-	}
-
-	arg := args[0]
-
-	for _, cmd := range commands.AvailableCommands {
-		if cmd.Name() == arg {
-			utils.Tmpl(helpTemplate, cmd)
-			return
+func commandGroupsFilter() []*commands.CommandGroup {
+	var tmpCommandGroups = []*commands.CommandGroup{}
+	for _, cgs := range commands.AvailableCommandGroups {
+		if len(cgs.Commands) != 0 || cgs.Name == "default" {
+			tmpCommandGroups = append(tmpCommandGroups, cgs)
 		}
 	}
-	utils.PrintErrorAndExit("Unknown help topic", ErrorTemplate)
+	return tmpCommandGroups
+}
+
+func SampleUsage() {
+	utils.Tmpl(sampleGroupUsageTemplate, commandGroupsFilter())
+}
+
+func CommandHelp(group *commands.CommandGroup) {
+	utils.Tmpl(groupUsageTemplate, group)
+}
+
+func SubCommandHelp(cmd *commands.Command) {
+	utils.Tmpl(helpTemplate, cmd)
 }
